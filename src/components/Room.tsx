@@ -9,6 +9,7 @@ const Room = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const name = searchParams.get('name');
     const [socket, setSocket] = useState<null | Socket>(null);
+    const [lobby, setLobby] = useState(false);
 
     useEffect(() => {
         const socket = io(URL, {
@@ -27,9 +28,18 @@ const Room = () => {
                 roomId,
                 sdp: ""
             });
+            socket.on('lobby', () => setLobby(true));
         });
         setSocket(socket);
     }, [name]);
+
+    if (lobby) {
+        return (
+            <div>
+                Waiting to connect...
+            </div>
+        )
+    }
 
     return (
         <div>Hi {name}</div>

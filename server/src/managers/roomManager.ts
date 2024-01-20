@@ -1,11 +1,12 @@
 import { User } from "./userManager";
 
+let ID = 0;
 export interface Room {
     user1: User;
     user2: User;
 }
 
-export class roomManager {
+export class RoomManager {
 
     private rooms: Map<string, Room>;
 
@@ -39,6 +40,6 @@ export class roomManager {
         });
     }
 
-    generate() { return 1; }
+    generate() { return ID++; }
 
 }

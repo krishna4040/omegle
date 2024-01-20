@@ -1,5 +1,5 @@
 import { Socket } from "socket.io";
-import { roomManager } from "./roomManager";
+import { RoomManager } from "./roomManager";
 
 export interface User {
     socket: Socket;
@@ -10,12 +10,12 @@ export class UserManager {
 
     private users: User[];
     private queue: string[];
-    private roomManager: roomManager;
+    private roomManager: RoomManager;
 
     constructor() {
         this.users = [];
         this.queue = [];
-        this.roomManager = new roomManager();
+        this.roomManager = new RoomManager();
     }
 
     addUser(name: string, socket: Socket) {
@@ -24,11 +24,13 @@ export class UserManager {
             socket
         });
         this.queue.push(socket.id);
-        this.initialHandlers(socket);
         this.clearQueue();
+        this.initialHandlers(socket);
     }
     removeUser(socketId: string) {
-        this.users = this.users.filter(x => x.socket.id === socketId);
+        this.users.find(x => x.socket.id === socketId);
+        this.users = this.users.filter(x => x.socket.id !== socketId);
+        this.queue = this.queue.filter(x => x !== socketId);
     }
     clearQueue() {
         if (this.queue.length < 2) {
