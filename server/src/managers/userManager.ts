@@ -24,8 +24,8 @@ export class UserManager {
             socket
         });
         this.queue.push(socket.id);
-        this.clearQueue();
         this.initialHandlers(socket);
+        this.clearQueue();
     }
     removeUser(socketId: string) {
         this.users = this.users.filter(x => x.socket.id === socketId);
@@ -36,17 +36,8 @@ export class UserManager {
         }
         const user1 = this.users.find(x => x.socket.id === this.queue.pop());
         const user2 = this.users.find(x => x.socket.id === this.queue.pop());
-
-        user1?.socket.emit("new-room", {
-            type: "send-offer",
-            room: this.generate()
-        });
-
         this.roomManager.createRoom(user1!, user2!);
-    }
-
-    generate() {
-        return 1;
+        this.clearQueue();
     }
 
     initialHandlers(socket: Socket) {
@@ -57,5 +48,4 @@ export class UserManager {
             this.roomManager.onAnswer(roomId, sdp);
         })
     }
-
 }
