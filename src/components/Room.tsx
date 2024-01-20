@@ -11,7 +11,7 @@ const Room = () => {
     }, []);
 
     return (
-        <div>Room</div>
+        <div>Hi {name}</div>
     )
 }
 
