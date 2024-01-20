@@ -12,23 +12,25 @@ const Room = () => {
     const [lobby, setLobby] = useState(false);
 
     useEffect(() => {
-        const socket = io(URL, {
-            autoConnect: false
-        });
+        const socket = io(URL);
         socket.on('send-offer', ({ roomId }) => {
             alert("send offer please");
-            socket.emit('answer', {
+            socket.emit('offer', {
                 roomId,
                 sdp: ''
             });
         });
-        socket.on('offer', ({ roomId, offer }) => {
+        socket.on('offer', ({ roomId }) => {
             alert("send answer please");
             socket.emit("answer", {
                 roomId,
-                sdp: ""
+                sdp: ''
             });
             socket.on('lobby', () => setLobby(true));
+        });
+        socket.emit("answer", {
+            roomId,
+            sdp: sdp
         });
         setSocket(socket);
     }, [name]);
