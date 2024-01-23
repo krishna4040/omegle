@@ -5,7 +5,12 @@ import { UserManager } from "./managers/userManager";
 
 const app = express();
 const httpServer = createServer(app);
-const io = new Server(httpServer);
+const io = new Server(httpServer, {
+    cors: {
+        origin: '*',
+        credentials: true
+    }
+});
 
 const userManager = new UserManager();
 
@@ -17,7 +22,7 @@ io.on('connection', (socket: Socket) => {
     })
 });
 
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json());
 
 httpServer.listen(3000, () => console.log("app listning succsesfully on 3000"));
 app.get('/', (req: Request, res: Response) => res.send('<h1>Home page for api</h1>'))

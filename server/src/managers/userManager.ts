@@ -18,10 +18,7 @@ export class UserManager {
     }
 
     addUser(name: string, socket: Socket) {
-        this.users.push({
-            name,
-            socket
-        });
+        this.users.push({ name, socket });
         this.queue.push(socket.id);
         this.clearQueue();
         this.initialHandlers(socket);
