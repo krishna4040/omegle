@@ -1,5 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
 import Room from './Room';
 
 const Landing = () => {
@@ -9,21 +8,21 @@ const Landing = () => {
     const [localVideoTrack, setLocalVideoTrack] = useState<MediaStreamTrack | null>(null);
     const [localAudioTrack, setLocalAudioTrack] = useState<MediaStreamTrack | null>(null);
 
-    const videoRef = useRef<HTMLVideoElement>(null);
+    const videoRef = useRef<HTMLVideoElement | null>(null);
 
     const getCam = async () => {
         const streams = await window.navigator.mediaDevices.getUserMedia({
             audio: true,
             video: true
         });
-        const videoTrack = streams.getAudioTracks()[0]
-        const audioTrack = streams.getVideoTracks()[0]
+        const videoTrack = streams.getVideoTracks()[0]
+        const audioTrack = streams.getAudioTracks()[0]
         setLocalAudioTrack(audioTrack);
         setLocalVideoTrack(videoTrack);
         if (!videoRef.current) {
             return;
         }
-        videoRef.current.srcObject = new MediaStream([videoTrack]);
+        videoRef.current.srcObject = new MediaStream([videoTrack, audioTrack]);
         videoRef.current.play();
     }
 
@@ -36,7 +35,7 @@ const Landing = () => {
     if (!joined) {
         return (
             <div>
-                <video ref={videoRef}></video>
+                <video ref={videoRef} style={{ border: '5px solid black' }}></video>
                 <input type="text" value={name} placeholder='Enter Name' onChange={(e) => setName(e.target.value)} />
                 <button onClick={() => {
                     setJoined(true);
@@ -44,7 +43,7 @@ const Landing = () => {
             </div>
         )
     } else {
-        return <Room localVideoRef={videoRef} name={name} localAudioTrack={localAudioTrack!} localVideoTrack={localVideoTrack!} />
+        return <Room name={name} localAudioTrack={localAudioTrack!} localVideoTrack={localVideoTrack!} />
     }
 }
 
