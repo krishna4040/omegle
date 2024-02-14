@@ -5,6 +5,7 @@ const Landing = () => {
 
     const [name, setName] = useState('');
     const [joined, setJoined] = useState(false);
+
     const [localVideoTrack, setLocalVideoTrack] = useState<MediaStreamTrack | null>(null);
     const [localAudioTrack, setLocalAudioTrack] = useState<MediaStreamTrack | null>(null);
 
@@ -19,17 +20,15 @@ const Landing = () => {
         const audioTrack = streams.getAudioTracks()[0]
         setLocalAudioTrack(audioTrack);
         setLocalVideoTrack(videoTrack);
-        if (!videoRef.current) {
-            return;
+
+        if (videoRef.current) {
+            videoRef.current.srcObject = new MediaStream([videoTrack, audioTrack]);
+            videoRef.current.play();
         }
-        videoRef.current.srcObject = new MediaStream([videoTrack, audioTrack]);
-        videoRef.current.play();
     }
 
     useEffect(() => {
-        if (videoRef && videoRef.current) {
-            getCam();
-        }
+        getCam()
     }, [videoRef]);
 
     if (!joined) {

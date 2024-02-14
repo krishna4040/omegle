@@ -11,14 +11,15 @@ interface props {
 
 const Room = ({ name, localAudioTrack, localVideoTrack }: props) => {
 
-    const [socket, setSocket] = useState<null | Socket>(null);
     const [lobby, setLobby] = useState(false);
+    const [socket, setSocket] = useState<null | Socket>(null);
+
     const [sendingPc, setSendingPc] = useState<RTCPeerConnection | null>(null);
     const [ReceivingPc, setReceivingPc] = useState<RTCPeerConnection | null>(null);
 
     const [remoteVideoTrack, setRemoteVideoTrack] = useState<MediaStreamTrack | null>(null);
     const [remoteAudioTrack, setRemoteAudioTrack] = useState<MediaStreamTrack | null>(null);
-    const [remoteMediaStream, setRemoteMediaStream] = useState<MediaStream | null>(null);
+
     const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
     const localVideoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -26,15 +27,16 @@ const Room = ({ name, localAudioTrack, localVideoTrack }: props) => {
         const socket = io(URL);
 
         socket.on('send-offer', async ({ roomId }) => {
+            console.log("send-offer listened")
             setLobby(false);
-
             const pc = new RTCPeerConnection();
-
             setSendingPc(pc);
 
+            // when we send-offer side we add local-media-stream
             pc.addTrack(localAudioTrack);
             pc.addTrack(localVideoTrack);
 
+            // STUN server hit to get public ip every time send-offer is running
             pc.onicecandidate = async (e) => {
                 if (e.candidate) {
                     socket.emit("add-ice-candidate", {
@@ -46,6 +48,7 @@ const Room = ({ name, localAudioTrack, localVideoTrack }: props) => {
             }
 
             pc.onnegotiationneeded = async () => {
+                // setting local session description
                 const sdp = await pc.createOffer();
                 pc.setLocalDescription(sdp)
                 socket.emit("offer", {
@@ -58,29 +61,21 @@ const Room = ({ name, localAudioTrack, localVideoTrack }: props) => {
             socket.emit('offer', {
                 roomId,
                 sdp
-            });
-        });
+            })
+        })
 
         socket.on('offer', async ({ roomId, sdp: remoteSdp }) => {
-            setLobby(false);
+            console.log("offer listened")
+            setLobby(false)
+            const pc = new RTCPeerConnection()
+            setReceivingPc(pc)
 
-            const pc = new RTCPeerConnection();
+            // before getting answer-sdp we need to set remote description
+            pc.setRemoteDescription(remoteSdp)
+            const sdp = await pc.createAnswer()
 
-            pc.setRemoteDescription(remoteSdp);
-            const sdp = await pc.createAnswer();
-            const stream = new MediaStream();
-            if (remoteVideoRef.current) {
-                remoteVideoRef.current.srcObject = stream;
-            }
-
-            setRemoteMediaStream(stream);
-            setReceivingPc(pc);
-
+            // Hitting STUN server
             pc.onicecandidate = async (e) => {
-                if (!e.candidate) {
-                    return;
-                }
-                console.log("omn ice candidate on receiving seide");
                 if (e.candidate) {
                     socket.emit("add-ice-candidate", {
                         candidate: e.candidate,
@@ -92,13 +87,12 @@ const Room = ({ name, localAudioTrack, localVideoTrack }: props) => {
 
             socket.emit("answer", {
                 roomId,
-                sdp: sdp
-            });
+                sdp
+            })
 
             setTimeout(() => {
                 const track1 = pc.getTransceivers()[0].receiver.track
                 const track2 = pc.getTransceivers()[1].receiver.track
-                console.log(track1);
                 if (track1.kind === "video") {
                     setRemoteAudioTrack(track2)
                     setRemoteVideoTrack(track1)
@@ -106,38 +100,38 @@ const Room = ({ name, localAudioTrack, localVideoTrack }: props) => {
                     setRemoteAudioTrack(track1)
                     setRemoteVideoTrack(track2)
                 }
-                //@ts-ignore
-                remoteVideoRef.current.srcObject.addTrack(track1)
-                //@ts-ignore
-                remoteVideoRef.current.srcObject.addTrack(track2)
-                //@ts-ignore
-                remoteVideoRef.current.play();
-            }, 5000)
-        });
+                // Adding remote-media to Remote-video-ref
+                if (remoteVideoRef.current && remoteVideoTrack && remoteAudioTrack) {
+                    remoteVideoRef.current.srcObject = new MediaStream([remoteVideoTrack, remoteAudioTrack])
+                    remoteVideoRef.current.play();
+                }
+            }, 2000)
+        })
 
         socket.on("add-ice-candidate", ({ candidate, type }) => {
-            console.log("add ice candidate from remote");
-            console.log({ candidate, type })
+            console.log("add-ice-candidate listened")
             if (type == "sender") {
                 setReceivingPc(pc => {
-                    if (!pc) {
-                        console.error("receiving pc out found")
-                    } else {
-                        console.error(pc.ontrack)
-                    }
                     pc?.addIceCandidate(candidate)
                     return pc;
-                });
+                })
             } else {
                 setSendingPc(pc => {
                     pc?.addIceCandidate(candidate)
                     return pc;
-                });
+                })
             }
         })
 
         setSocket(socket);
-    }, [name]);
+    }, [name])
+
+    useEffect(() => {
+        if (localVideoRef.current) {
+            localVideoRef.current.srcObject = new MediaStream([localAudioTrack, localVideoTrack])
+            localVideoRef.current.play()
+        }
+    }, [localVideoRef])
 
     return (
         <div>
